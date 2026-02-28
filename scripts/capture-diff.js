@@ -3,14 +3,20 @@
 /**
  * capture-diff.js
  *
- * Captures the current git diff state and persists it to a timestamped log file
- * in .task-diffs/. Run this BEFORE task completion or cleanup to preserve a
- * record of all changes made during a task.
+ * Captures the current git diff state — both uncommitted AND recently committed
+ * changes — and persists everything to a timestamped log file in .task-diffs/.
+ *
+ * This solves the problem where diffs "disappear" after task completion: once
+ * changes are committed the working tree is clean, so a plain `git diff HEAD`
+ * returns nothing.  This script also records the last N commit diffs so you
+ * always have a full record of what changed.
  *
  * Usage:
  *   node scripts/capture-diff.js
  *   npm run capture-diff
  *   npm run capture-diff -- --label "my feature work"
+ *   npm run capture-diff -- --commits 3          # include last 3 commit diffs
+ *   npm run capture-diff -- --no-last-commit     # skip committed diff section
  */
 
 import { execSync } from "node:child_process";
@@ -19,6 +25,8 @@ import { join, resolve } from "node:path";
 
 const ROOT = resolve(import.meta.dirname, "..");
 const DIFF_DIR = join(ROOT, ".task-diffs");
+
+// ── helpers ──────────────────────────────────────────────────────────────
 
 /** Run a git command and return its stdout (empty string on error). */
 function git(args) {
@@ -34,27 +42,106 @@ function timestamp() {
   return new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
 }
 
-function main() {
-  // Optional label from CLI args (--label "something")
-  const labelIdx = process.argv.indexOf("--label");
-  const label =
-    labelIdx !== -1 && process.argv[labelIdx + 1]
-      ? process.argv[labelIdx + 1]
-      : "";
+/** Parse a simple CLI flag value:  --flag value  →  value */
+function flagValue(flag, fallback) {
+  const idx = process.argv.indexOf(flag);
+  return idx !== -1 && process.argv[idx + 1]
+    ? process.argv[idx + 1]
+    : fallback;
+}
 
-  // Gather git information
+/** Check if a boolean flag is present:  --no-last-commit  →  true */
+function hasFlag(flag) {
+  return process.argv.includes(flag);
+}
+
+// ── main ─────────────────────────────────────────────────────────────────
+
+function main() {
+  const label = flagValue("--label", "");
+  const commitCount = Math.max(1, parseInt(flagValue("--commits", "1"), 10));
+  const includeLastCommit = !hasFlag("--no-last-commit");
+
+  const separator = "=".repeat(72);
+  const thinSep = "-".repeat(72);
+  const sections = [];
+
+  // Header
+  sections.push(
+    "TASK DIFF CAPTURE",
+    `Timestamp : ${new Date().toISOString()}`,
+    label ? `Label     : ${label}` : null,
+    ""
+  );
+
+  // ── 1. Recent commit log ──────────────────────────────────────────────
+  const logRecent = git("log --oneline -10");
+  sections.push(separator, "RECENT COMMITS", separator);
+  sections.push(logRecent || "(no commits)", "");
+
+  // ── 2. Uncommitted changes ────────────────────────────────────────────
   const status = git("status --porcelain");
   const diffAll = git("diff HEAD");
   const diffStaged = git("diff --staged");
-  const logRecent = git("log --oneline -5");
 
-  // If there is nothing to capture, say so and exit
-  if (!status.trim() && !diffAll.trim() && !diffStaged.trim()) {
-    console.log("ℹ  No uncommitted changes to capture.");
+  const hasUncommitted = !!(status.trim() || diffAll.trim() || diffStaged.trim());
+
+  sections.push(separator, "CHANGED FILES  (git status --porcelain)", separator);
+  sections.push(status || "(clean working tree)", "");
+
+  sections.push(separator, "UNCOMMITTED DIFF  (git diff HEAD)", separator);
+  sections.push(diffAll || "(no uncommitted changes)", "");
+
+  sections.push(separator, "STAGED DIFF  (git diff --staged)", separator);
+  sections.push(diffStaged || "(no staged changes)", "");
+
+  // ── 3. Last N committed diffs (the key addition) ──────────────────────
+  let hasCommitDiffs = false;
+
+  if (includeLastCommit) {
+    sections.push(
+      separator,
+      `LAST ${commitCount} COMMIT DIFF${commitCount > 1 ? "S" : ""}`,
+      separator,
+      ""
+    );
+
+    for (let i = 0; i < commitCount; i++) {
+      const ref = `HEAD~${i}`;
+      const parentRef = `HEAD~${i + 1}`;
+
+      // Show commit metadata
+      const commitInfo = git(`log -1 --format="%H%n%an <%ae>%n%ai%n%s" ${ref}`);
+      if (!commitInfo.trim()) break; // no more commits
+
+      const commitDiff = git(`diff ${parentRef}..${ref}`);
+      const commitStat = git(`diff --stat ${parentRef}..${ref}`);
+
+      if (commitDiff.trim()) hasCommitDiffs = true;
+
+      sections.push(
+        thinSep,
+        `Commit ${i + 1}: ${ref}`,
+        thinSep,
+        commitInfo.trim(),
+        "",
+        "Files changed:",
+        commitStat || "  (none)",
+        "",
+        "Diff:",
+        commitDiff || "(empty commit or root commit)",
+        ""
+      );
+    }
+  }
+
+  // ── Bail out only if there is truly nothing at all ────────────────────
+  if (!hasUncommitted && !hasCommitDiffs) {
+    console.log("ℹ  No uncommitted or recent committed changes to capture.");
     process.exit(0);
   }
 
-  // Ensure output directory exists
+  // ── Write log file ────────────────────────────────────────────────────
   mkdirSync(DIFF_DIR, { recursive: true });
 
   const ts = timestamp();
@@ -63,51 +150,36 @@ function main() {
     : `diff-${ts}.log`;
   const filepath = join(DIFF_DIR, filename);
 
-  // Build the log content
-  const separator = "=".repeat(72);
-  const sections = [
-    `TASK DIFF CAPTURE`,
-    `Timestamp : ${new Date().toISOString()}`,
-    label ? `Label     : ${label}` : null,
-    ``,
-    `${separator}`,
-    `RECENT COMMITS`,
-    `${separator}`,
-    logRecent || "(no commits)",
-    ``,
-    `${separator}`,
-    `CHANGED FILES  (git status --porcelain)`,
-    `${separator}`,
-    status || "(no changes)",
-    ``,
-    `${separator}`,
-    `FULL DIFF  (git diff HEAD)`,
-    `${separator}`,
-    diffAll || "(no diff)",
-    ``,
-    `${separator}`,
-    `STAGED DIFF  (git diff --staged)`,
-    `${separator}`,
-    diffStaged || "(no staged changes)",
-  ].filter((line) => line !== null);
+  writeFileSync(
+    filepath,
+    sections.filter((line) => line !== null).join("\n") + "\n",
+    "utf-8"
+  );
 
-  writeFileSync(filepath, sections.join("\n") + "\n", "utf-8");
-
-  // Summary to stdout
-  const changedFiles = status
-    .split("\n")
-    .filter(Boolean)
-    .map((l) => `  ${l}`)
-    .join("\n");
-
+  // ── Summary to stdout ─────────────────────────────────────────────────
   console.log(`✅ Diff captured → ${filepath}`);
   console.log();
-  console.log("Changed files:");
-  console.log(changedFiles || "  (none)");
-  console.log();
-  console.log(
-    `Diff size: ${diffAll.length} chars (all) / ${diffStaged.length} chars (staged)`
-  );
+
+  if (hasUncommitted) {
+    const changedFiles = status
+      .split("\n")
+      .filter(Boolean)
+      .map((l) => `  ${l}`)
+      .join("\n");
+    console.log("Uncommitted files:");
+    console.log(changedFiles || "  (none)");
+    console.log(
+      `Uncommitted diff: ${diffAll.length} chars (all) / ${diffStaged.length} chars (staged)`
+    );
+  } else {
+    console.log("Working tree is clean (no uncommitted changes).");
+  }
+
+  if (hasCommitDiffs) {
+    console.log(
+      `Last ${commitCount} commit diff${commitCount > 1 ? "s" : ""}: included ✓`
+    );
+  }
 }
 
 main();
