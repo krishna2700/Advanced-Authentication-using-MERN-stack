@@ -12,7 +12,9 @@ A full-stack authentication application built with MongoDB, Express, React, and 
 - RESTful API architecture
 
 ### Git Diff Tracker
-- Track and preserve git diff information across development tasks
+- **Automatic preservation** of git diffs (no manual intervention needed)
+- **Git hooks** save diffs on every commit
+- **Background watcher** auto-saves every 5 minutes
 - CLI and REST API access to diff history
 - Automatic cleanup of old diffs
 - Compare changes across different points in time
@@ -60,12 +62,41 @@ npm install
 PORT=5000
 MONGO_URI=your_mongodb_connection_string
 JWT_SECRET=your_jwt_secret_key
+
+# Optional: Configure diff watcher (defaults shown)
+DIFF_WATCH_ENABLED=true
+DIFF_WATCH_INTERVAL=5
 ```
 
 4. Start the development server:
 ```bash
 npm run dev
 ```
+
+**The Git Diff Tracker will automatically start and preserve your changes!**
+
+## Quick Start - Diff Preservation
+
+Once the server is running, your git diffs are automatically preserved through:
+
+1. **Automatic watcher** - Saves every 5 minutes
+2. **Git hooks** - Saves on every commit
+3. **Manual saves** - Use `npm run diff:save` anytime
+
+### Recover Lost Diffs
+
+```bash
+# View your last saved diff
+npm run diff:last
+
+# View all recent diffs
+npm run diff:history
+
+# Compare current vs previous
+npm run diff:compare
+```
+
+See [DIFF_PRESERVATION_GUIDE.md](./DIFF_PRESERVATION_GUIDE.md) for complete documentation.
 
 ## API Endpoints
 
@@ -356,7 +387,8 @@ ISC
 
 ## Additional Documentation
 
-For detailed information about the Git Diff Tracker, see [GIT_DIFF_TRACKER.md](./GIT_DIFF_TRACKER.md)
+- **[DIFF_PRESERVATION_GUIDE.md](./DIFF_PRESERVATION_GUIDE.md)** - Complete guide for automatic diff preservation (start here!)
+- **[GIT_DIFF_TRACKER.md](./GIT_DIFF_TRACKER.md)** - Git Diff Tracker API reference and details
 
 ## Contributing
 

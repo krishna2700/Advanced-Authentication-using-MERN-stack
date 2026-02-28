@@ -4,7 +4,15 @@
   "description": "",
   "main": "backend/index.js",
   "scripts": {
-    "dev": "nodemon index.js"
+    "dev": "nodemon index.js",
+    "diff:save": "node backend/utils/diffCli.js save",
+    "diff:current": "node backend/utils/diffCli.js current",
+    "diff:history": "node backend/utils/diffCli.js history",
+    "diff:last": "node backend/utils/diffCli.js last",
+    "diff:compare": "node backend/utils/diffCli.js compare",
+    "diff:export": "node backend/utils/diffCli.js export",
+    "diff:watch": "node backend/utils/diffWatcherCli.js start",
+    "diff:watch:once": "node backend/utils/diffWatcherCli.js once"
   },
   "keywords": [],
   "author": "",
