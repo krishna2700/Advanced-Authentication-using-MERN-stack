@@ -12,7 +12,6 @@ dist
 dist-ssr
 *.local
 
-.env
 
 # Editor directories and files
 .vscode/*
@@ -27,3 +26,4 @@ dist-ssr
 
 # Task diff captures (local-only logs)
 .task-diffs/
+config.bat
