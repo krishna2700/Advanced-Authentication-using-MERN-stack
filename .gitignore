@@ -24,3 +24,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Task diff captures (local-only logs)
+.task-diffs/

@@ -4,7 +4,8 @@
   "description": "",
   "main": "backend/index.js",
   "scripts": {
-    "dev": "nodemon index.js"
+    "dev": "nodemon index.js",
+    "capture-diff": "node scripts/capture-diff.js"
   },
   "keywords": [],
   "author": "",
