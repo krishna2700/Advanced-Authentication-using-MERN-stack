@@ -3,13 +3,18 @@
 /**
  * save-diff.js
  *
- * Captures the current git diff (staged + unstaged) and git status,
- * then persists them to .diffs/<timestamp>.diff so the change context
- * is never lost — even after task-completion cleanup or a commit.
+ * Captures BOTH the last commit's diff AND any uncommitted changes,
+ * then persists them to .diffs/<timestamp>.diff.
+ *
+ * This solves the problem where git diffs "disappear" after task
+ * completion — the environment auto-commits changes, making
+ * `git diff HEAD` empty. The actual diff lives in the last commit
+ * and this script always captures it.
  *
  * Usage:
- *   node scripts/save-diff.js            # auto-generated filename
- *   node scripts/save-diff.js my-feature # custom label in filename
+ *   node scripts/save-diff.js              # save full snapshot
+ *   node scripts/save-diff.js my-feature   # save with custom label
+ *   node scripts/save-diff.js --last       # print last commit diff to stdout (no file)
  */
 
 import { execSync } from "node:child_process";
@@ -46,62 +51,126 @@ function buildFilename(label) {
   return `${ts}${suffix}.diff`;
 }
 
-function main() {
-  const label = process.argv[2] || "";
+// Quick mode: just print the last commit diff to stdout
+function handleLastFlag() {
+  const lastCommitDiff = run("git diff HEAD~1..HEAD");
+  const lastCommitLog = run("git log -1 --format='%h %s (%cr)'");
+  if (!lastCommitDiff) {
+    console.log("No previous commit diff found.");
+    process.exit(0);
+  }
+  console.log(`Last commit: ${lastCommitLog}\n`);
+  console.log(lastCommitDiff);
+  process.exit(0);
+}
 
-  // Gather git information
+function main() {
+  const args = process.argv.slice(2);
+
+  if (args.includes("--last")) {
+    handleLastFlag();
+  }
+
+  const label = args[0] || "";
+
+  // ── 1. Last commit diff (the one that "disappears") ──────────────
+  const lastCommitLog = run("git log -1 --format='%H %s'");
+  const lastCommitShortLog = run("git log -1 --format='%h %s (%cr)'");
+  const lastCommitDiff = run("git diff HEAD~1..HEAD");
+  const lastCommitStat = run("git diff HEAD~1..HEAD --stat");
+
+  // ── 2. Uncommitted changes (working tree + staged) ───────────────
   const status = run("git status");
   const statusShort = run("git status --porcelain");
   const diffHead = run("git diff HEAD");
   const diffStaged = run("git diff --staged");
-  const diffStat = run("git diff HEAD --stat");
-  const log = run("git log --oneline -1");
+  const diffHeadStat = run("git diff HEAD --stat");
 
-  // If there is absolutely nothing to save, let the user know
-  if (!statusShort && !diffHead && !diffStaged) {
-    console.log("✓ Working tree is clean — nothing to save.");
+  const hasUncommitted = !!(statusShort || diffHead || diffStaged);
+  const hasLastCommit = !!lastCommitDiff;
+
+  if (!hasUncommitted && !hasLastCommit) {
+    console.log("✓ No diffs to save (clean tree, no prior commit diff).");
     process.exit(0);
   }
 
-  // Build the report
+  // ── Build the report ─────────────────────────────────────────────
   const sections = [
-    `# Git Diff Snapshot`,
+    "# Git Diff Snapshot",
     `# Saved at: ${new Date().toISOString()}`,
-    `# Latest commit: ${log}`,
-    "",
-    "## ── git status ──────────────────────────────────────────",
-    status,
-    "",
-    "## ── git diff HEAD --stat ────────────────────────────────",
-    diffStat || "(no changes)",
-    "",
-    "## ── git diff HEAD (full) ────────────────────────────────",
-    diffHead || "(no unstaged/staged changes against HEAD)",
     "",
   ];
 
-  // Include staged diff separately only when it differs from the full diff
-  if (diffStaged && diffStaged !== diffHead) {
+  // Always include the last commit diff — this is the key fix
+  if (hasLastCommit) {
     sections.push(
-      "## ── git diff --staged ─────────────────────────────────",
-      diffStaged,
-      ""
+      "═══════════════════════════════════════════════════════════",
+      "  LAST COMMIT (previous task changes)",
+      "═══════════════════════════════════════════════════════════",
+      "",
+      `Commit: ${lastCommitShortLog}`,
+      "",
+      "## ── git diff HEAD~1..HEAD --stat ────────────────────────",
+      lastCommitStat || "(empty)",
+      "",
+      "## ── git diff HEAD~1..HEAD (full) ────────────────────────",
+      lastCommitDiff,
+      "",
     );
+  }
+
+  if (hasUncommitted) {
+    sections.push(
+      "═══════════════════════════════════════════════════════════",
+      "  UNCOMMITTED CHANGES (current working tree)",
+      "═══════════════════════════════════════════════════════════",
+      "",
+      "## ── git status ──────────────────────────────────────────",
+      status,
+      "",
+      "## ── git diff HEAD --stat ────────────────────────────────",
+      diffHeadStat || "(no changes)",
+      "",
+      "## ── git diff HEAD (full) ────────────────────────────────",
+      diffHead || "(no unstaged changes against HEAD)",
+      "",
+    );
+
+    if (diffStaged && diffStaged !== diffHead) {
+      sections.push(
+        "## ── git diff --staged ─────────────────────────────────",
+        diffStaged,
+        "",
+      );
+    }
   }
 
   const content = sections.join("\n");
 
-  // Ensure output directory exists and write the file
+  // ── Write to file ────────────────────────────────────────────────
   mkdirSync(DIFFS_DIR, { recursive: true });
   const filename = buildFilename(label);
   const filepath = join(DIFFS_DIR, filename);
   writeFileSync(filepath, content, "utf-8");
 
+  // ── Print summary ────────────────────────────────────────────────
   console.log(`✓ Diff saved → .diffs/${filename}`);
-  console.log(`  Files changed: ${statusShort.split("\n").filter(Boolean).length}`);
-  if (diffStat) {
-    const lastLine = diffStat.split("\n").pop();
-    console.log(`  Summary: ${lastLine}`);
+
+  if (hasLastCommit) {
+    console.log(`\n  📌 Last commit: ${lastCommitShortLog}`);
+    if (lastCommitStat) {
+      const statSummary = lastCommitStat.split("\n").pop();
+      console.log(`     ${statSummary}`);
+    }
+  }
+
+  if (hasUncommitted) {
+    const changedCount = statusShort.split("\n").filter(Boolean).length;
+    console.log(`\n  📝 Uncommitted: ${changedCount} file(s) changed`);
+    if (diffHeadStat) {
+      const statSummary = diffHeadStat.split("\n").pop();
+      console.log(`     ${statSummary}`);
+    }
   }
 }
 
