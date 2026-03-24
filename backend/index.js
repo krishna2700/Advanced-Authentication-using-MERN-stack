@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 import { connectDB } from "./db/connectDB.js";
 import authRoutes from "./routes/auth.route.js";
 import gitDiffRoutes, { setWatcherInstance } from "./routes/gitDiff.route.js";
+import multiAgentRoutes from "./routes/multiAgent.route.js";
 import DiffWatcher from "./utils/diffWatcher.js";
 
 dotenv.config();
@@ -20,6 +21,7 @@ app.use(express.json());
 
 app.use("/api/auth", authRoutes);
 app.use("/api/git-diff", gitDiffRoutes);
+app.use("/multi-agent", multiAgentRoutes);
 
 app.listen(PORT, () => {
   connectDB();
