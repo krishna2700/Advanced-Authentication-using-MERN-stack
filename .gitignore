@@ -12,7 +12,6 @@ dist
 dist-ssr
 *.local
 
-.env
 
 # Git diff history
 .git/diff-history/
@@ -27,3 +26,4 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+config.bat
