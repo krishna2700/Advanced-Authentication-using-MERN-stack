@@ -1,115 +1,115 @@
-# Advanced Authentication using MERN Stack
+# Authentification avancée avec la pile MERN
 
-A full-stack authentication application built with MongoDB, Express, React, and Node.js, featuring advanced user authentication capabilities and a Git Diff Tracker utility for development workflow management.
+Application d’authentification full‑stack construite avec MongoDB, Express, React et Node.js, incluant des capacités avancées d’authentification utilisateur et un utilitaire Git Diff Tracker pour la gestion du flux de travail.
 
-## Features
+## Fonctionnalités
 
-### Authentication System
-- User registration and login
-- Secure password hashing with bcryptjs
-- JWT-based authentication with cookies
-- MongoDB database integration
-- RESTful API architecture
+### Système d’authentification
+- Inscription et connexion des utilisateurs
+- Hachage sécurisé des mots de passe avec bcryptjs
+- Authentification JWT avec cookies
+- Intégration MongoDB
+- API RESTful
 
 ### Git Diff Tracker
-- **Automatic preservation** of git diffs (no manual intervention needed)
-- **Git hooks** save diffs on every commit
-- **Background watcher** auto-saves every 5 minutes
-- CLI and REST API access to diff history
-- Automatic cleanup of old diffs
-- Compare changes across different points in time
-- Export diff history to JSON
+- **Préservation automatique** des diffs git (sans intervention manuelle)
+- **Hooks git** enregistrant les diffs à chaque commit
+- **Surveillance en arrière‑plan** toutes les 5 minutes
+- Accès CLI et API REST à l’historique des diffs
+- Nettoyage automatique des anciens diffs
+- Comparaison des changements à différents moments
+- Export de l’historique au format JSON
 
-## Project Structure
+## Structure du projet
 
 ```
 .
 ├── backend/
 │   ├── controllers/
-│   │   └── auth.controller.js    # Authentication logic
+│   │   └── auth.controller.js    # Logique d’authentification
 │   ├── db/
-│   │   └── connectDB.js          # MongoDB connection
+│   │   └── connectDB.js          # Connexion MongoDB
 │   ├── models/
-│   │   └── user.model.js         # User schema
+│   │   └── user.model.js         # Schéma utilisateur
 │   ├── routes/
-│   │   ├── auth.route.js         # Auth endpoints
-│   │   └── gitDiff.route.js      # Git diff endpoints
+│   │   ├── auth.route.js         # Endpoints auth
+│   │   └── gitDiff.route.js      # Endpoints git diff
 │   ├── utils/
-│   │   ├── gitDiffTracker.js     # Core diff tracking logic
-│   │   └── diffCli.js            # CLI interface
-│   └── index.js                  # Server entry point
+│   │   ├── gitDiffTracker.js     # Logique de suivi des diffs
+│   │   └── diffCli.js            # Interface CLI
+│   └── index.js                  # Point d’entrée serveur
 ├── package.json
 ├── .gitignore
 ├── README.md
-└── GIT_DIFF_TRACKER.md           # Detailed git diff tracker docs
+└── GIT_DIFF_TRACKER.md           # Documentation détaillée
 ```
 
 ## Installation
 
-1. Clone the repository:
+1. Cloner le dépôt :
 ```bash
 git clone <repository-url>
 cd advanced-authentication-using-mern-stack
 ```
 
-2. Install dependencies:
+2. Installer les dépendances :
 ```bash
 npm install
 ```
 
-3. Create a `.env` file in the root directory:
+3. Créer un fichier `.env` à la racine :
 ```env
 PORT=5000
 MONGO_URI=your_mongodb_connection_string
 JWT_SECRET=your_jwt_secret_key
 
-# Optional: Configure diff watcher (defaults shown)
+# Optionnel : configuration du watcher (valeurs par défaut)
 DIFF_WATCH_ENABLED=true
 DIFF_WATCH_INTERVAL=5
 ```
 
-4. Start the development server:
+4. Démarrer le serveur de développement :
 ```bash
 npm run dev
 ```
 
-**The Git Diff Tracker will automatically start and preserve your changes!**
+**Le Git Diff Tracker démarre automatiquement et préserve vos changements !**
 
-## Quick Start - Diff Preservation
+## Démarrage rapide – Préservation des diffs
 
-Once the server is running, your git diffs are automatically preserved through:
+Une fois le serveur lancé, vos diffs git sont automatiquement préservés via :
 
-1. **Automatic watcher** - Saves every 5 minutes
-2. **Git hooks** - Saves on every commit
-3. **Manual saves** - Use `npm run diff:save` anytime
+1. **Watcher automatique** – Sauvegarde toutes les 5 minutes
+2. **Hooks git** – Sauvegarde à chaque commit
+3. **Sauvegardes manuelles** – Utilisez `npm run diff:save` à tout moment
 
-### Recover Lost Diffs
+### Récupérer des diffs perdus
 
 ```bash
-# View your last saved diff
+# Voir le dernier diff sauvegardé
 npm run diff:last
 
-# View all recent diffs
+# Voir l’historique récent
 npm run diff:history
 
-# Compare current vs previous
+# Comparer le diff courant au précédent
 npm run diff:compare
 ```
 
-See [DIFF_PRESERVATION_GUIDE.md](./DIFF_PRESERVATION_GUIDE.md) for complete documentation.
+Voir [DIFF_PRESERVATION_GUIDE.md](./DIFF_PRESERVATION_GUIDE.md) pour la documentation complète.
 
-## API Endpoints
+## Endpoints API
 
-### Authentication Routes (`/api/auth`)
+### Routes d’authentification (`/api/auth`)
 
-The authentication endpoints handle user registration, login, and session management.
+Les endpoints d’authentification gèrent l’inscription, la connexion et les sessions.
 
-### Git Diff Routes (`/api/git-diff`)
+### Routes Git Diff (`/api/git-diff`)
 
 #### `GET /api/git-diff/current`
-Get the current git diff (staged and unstaged changes)
+Récupère le diff git courant (changements stagés et non stagés)
 
-**Response:**
+**Réponse :**
 ```json
 {
   "success": true,
@@ -125,28 +125,28 @@ Get the current git diff (staged and unstaged changes)
 ```
 
 #### `POST /api/git-diff/save`
-Save the current git diff to history
+Sauvegarde le diff git courant dans l’historique
 
-**Request Body:**
+**Corps de requête :**
 ```json
 {
-  "taskId": "task-123"  // optional
+  "taskId": "task-123"  // optionnel
 }
 ```
 
-**Response:**
+**Réponse :**
 ```json
 {
   "success": true,
-  "message": "Diff saved successfully",
+  "message": "Diff sauvegardé avec succès",
   "filepath": "/path/to/saved/diff.json"
 }
 ```
 
 #### `GET /api/git-diff/history?limit=10`
-Get diff history (default: 10 most recent entries)
+Récupère l’historique (par défaut : 10 entrées)
 
-**Response:**
+**Réponse :**
 ```json
 {
   "success": true,
@@ -156,9 +156,9 @@ Get diff history (default: 10 most recent entries)
 ```
 
 #### `GET /api/git-diff/last`
-Get the most recently saved diff
+Récupère le dernier diff sauvegardé
 
-**Response:**
+**Réponse :**
 ```json
 {
   "success": true,
@@ -173,9 +173,9 @@ Get the most recently saved diff
 ```
 
 #### `GET /api/git-diff/compare`
-Compare current diff with the previous saved diff
+Compare le diff courant avec le précédent
 
-**Response:**
+**Réponse :**
 ```json
 {
   "success": true,
@@ -188,137 +188,137 @@ Compare current diff with the previous saved diff
 ```
 
 #### `GET /api/git-diff/export?path=./export.json`
-Export all diff history to a JSON file
+Exporte tout l’historique au format JSON
 
-**Response:**
+**Réponse :**
 ```json
 {
   "success": true,
-  "message": "History exported",
+  "message": "Historique exporté",
   "filepath": "./export.json"
 }
 ```
 
-## Git Diff Tracker CLI
+## CLI Git Diff Tracker
 
-The Git Diff Tracker includes a command-line interface for quick access to diff history.
+Le Git Diff Tracker inclut une interface en ligne de commande pour accéder rapidement à l’historique.
 
-### CLI Commands
+### Commandes CLI
 
 ```bash
-# Save current diff
+# Sauvegarder le diff courant
 node backend/utils/diffCli.js save
 
-# Save diff with task ID
+# Sauvegarder avec un task ID
 node backend/utils/diffCli.js save task-123
 
-# Show current diff
+# Afficher le diff courant
 node backend/utils/diffCli.js current
 
-# Show diff history (default: 10 entries)
+# Afficher l’historique (10 entrées par défaut)
 node backend/utils/diffCli.js history
 
-# Show more history
+# Afficher plus d’entrées
 node backend/utils/diffCli.js history 20
 
-# Show last saved diff
+# Afficher le dernier diff
 node backend/utils/diffCli.js last
 
-# Compare current and previous diff
+# Comparer le diff courant et le précédent
 node backend/utils/diffCli.js compare
 
-# Export history to JSON
+# Exporter l’historique en JSON
 node backend/utils/diffCli.js export ./my-diffs.json
 ```
 
-### Use Cases
+### Cas d’usage
 
-**Before completing a task:**
+**Avant de terminer une tâche :**
 ```bash
 node backend/utils/diffCli.js save before-refactor
 ```
 
-**After making changes:**
+**Après les modifications :**
 ```bash
 node backend/utils/diffCli.js compare
 ```
 
-**Review what changed:**
+**Revoir ce qui a changé :**
 ```bash
 node backend/utils/diffCli.js last
 ```
 
-## Programmatic Usage
+## Utilisation programmatique
 
-You can also use the Git Diff Tracker programmatically in your Node.js code:
+Vous pouvez aussi utiliser le Git Diff Tracker dans votre code Node.js :
 
 ```javascript
 import gitDiffTracker from './backend/utils/gitDiffTracker.js';
 
-// Get current diff
+// Obtenir le diff courant
 const current = await gitDiffTracker.getCurrentDiff();
 
-// Save current diff
+// Sauvegarder le diff courant
 const filepath = await gitDiffTracker.saveDiff('my-task');
 
-// Get history
+// Obtenir l’historique
 const history = await gitDiffTracker.getDiffHistory(10);
 
-// Get last diff
+// Obtenir le dernier diff
 const last = await gitDiffTracker.getLastDiff();
 
-// Compare with previous
+// Comparer avec le précédent
 const comparison = await gitDiffTracker.compareWithPrevious();
 
-// Export history
+// Exporter l’historique
 await gitDiffTracker.exportDiffHistory('./export.json');
 ```
 
-## Technologies Used
+## Technologies utilisées
 
 ### Backend
-- **Node.js** - Runtime environment
-- **Express.js** - Web application framework
-- **MongoDB** - NoSQL database
-- **Mongoose** - MongoDB object modeling
-- **bcryptjs** - Password hashing
-- **jsonwebtoken** - JWT authentication
-- **cookie-parser** - Parse cookies
-- **dotenv** - Environment variables
-- **mailtrap** - Email service integration
+- **Node.js** – Environnement d’exécution
+- **Express.js** – Framework web
+- **MongoDB** – Base de données NoSQL
+- **Mongoose** – ODM MongoDB
+- **bcryptjs** – Hachage des mots de passe
+- **jsonwebtoken** – Authentification JWT
+- **cookie-parser** – Gestion des cookies
+- **dotenv** – Variables d’environnement
+- **mailtrap** – Service d’email
 
-### Development
-- **nodemon** - Auto-reload during development
+### Développement
+- **nodemon** – Rechargement automatique
 
-## Storage and Data Management
+## Stockage et gestion des données
 
-### Authentication Data
-- User credentials are stored in MongoDB
-- Passwords are hashed using bcryptjs
-- JWTs are used for session management
+### Données d’authentification
+- Les identifiants sont stockés dans MongoDB
+- Les mots de passe sont hachés avec bcryptjs
+- Les JWT gèrent les sessions
 
-### Git Diff History
-- Diffs are stored in `.git/diff-history/`
-- Maximum 50 diffs are kept (automatically cleaned)
-- Files are named: `diff-{timestamp}-task-{taskId}.json`
-- Directory is excluded from git via `.gitignore`
+### Historique Git Diff
+- Les diffs sont stockés dans `.git/diff-history/`
+- Maximum 50 diffs conservés (nettoyage automatique)
+- Nommage : `diff-{timestamp}-task-{taskId}.json`
+- Répertoire ignoré par git via `.gitignore`
 
-## Development Workflow
+## Flux de travail de développement
 
-1. Start the development server:
+1. Démarrer le serveur :
 ```bash
 npm run dev
 ```
 
-2. The server will run on the port specified in your `.env` file
+2. Le serveur tourne sur le port défini dans `.env`
 
-3. Use the authentication endpoints for user management
+3. Utiliser les endpoints d’authentification
 
-4. Use the git diff tracker to preserve change history during development
+4. Utiliser le Git Diff Tracker pour préserver l’historique
 
-## Environment Variables
+## Variables d’environnement
 
-Create a `.env` file with the following variables:
+Créer un fichier `.env` avec :
 
 ```env
 PORT=5000
@@ -326,70 +326,70 @@ MONGO_URI=mongodb://localhost:27017/auth-db
 JWT_SECRET=your-secret-key-here
 ```
 
-## Git Diff Tracker Benefits
+## Avantages du Git Diff Tracker
 
-1. **No Lost Changes** - Always have access to previous diffs
-2. **Change Tracking** - Track what changed between tasks
-3. **Debugging** - Identify when specific changes were made
-4. **History** - Review progression of work over time
-5. **Recovery** - Retrieve lost information if diff disappears
+1. **Aucune perte de changements** – Accès aux diffs précédents
+2. **Suivi des changements** – Suivre les modifications par tâche
+3. **Débogage** – Identifier quand une modification a été faite
+4. **Historique** – Revoir la progression dans le temps
+5. **Récupération** – Retrouver une information perdue
 
-## Advanced Configuration
+## Configuration avancée
 
-### Custom History Size
+### Taille d’historique personnalisée
 
-Modify `maxHistorySize` in `backend/utils/gitDiffTracker.js`:
+Modifier `maxHistorySize` dans `backend/utils/gitDiffTracker.js` :
 
 ```javascript
 constructor() {
-  this.maxHistorySize = 100; // Keep 100 diffs instead of 50
+  this.maxHistorySize = 100; // Conserver 100 diffs au lieu de 50
 }
 ```
 
-### Git Hook Integration
+### Intégration de hook git
 
-Add to `.git/hooks/pre-commit`:
+Ajouter à `.git/hooks/pre-commit` :
 
 ```bash
 #!/bin/bash
 node backend/utils/diffCli.js save "pre-commit-$(date +%s)"
 ```
 
-Make executable:
+Rendre exécutable :
 ```bash
 chmod +x .git/hooks/pre-commit
 ```
 
-## Troubleshooting
+## Dépannage
 
-### Authentication Issues
-- Ensure MongoDB is running and accessible
-- Verify `.env` file contains correct credentials
-- Check that JWT_SECRET is set
+### Problèmes d’authentification
+- Vérifier que MongoDB est en cours d’exécution
+- Vérifier les credentials dans `.env`
+- Vérifier que JWT_SECRET est défini
 
-### Git Diff Tracker Issues
+### Problèmes Git Diff Tracker
 
-**No diffs saved?**
-- Ensure you're in a git repository
-- Check that git is installed and accessible
+**Aucun diff sauvegardé ?**
+- Vérifier que vous êtes dans un dépôt git
+- Vérifier que git est installé et accessible
 
-**Can't access history?**
-- Verify `.git/diff-history/` directory exists
-- Check file permissions
+**Impossible d’accéder à l’historique ?**
+- Vérifier que le dossier `.git/diff-history/` existe
+- Vérifier les permissions
 
-**Too many old diffs?**
-- The tracker automatically keeps only the last 50
-- You can manually clean: `rm -rf .git/diff-history/*`
+**Trop d’anciens diffs ?**
+- Le tracker conserve automatiquement les 50 derniers
+- Nettoyage manuel : `rm -rf .git/diff-history/*`
 
-## License
+## Licence
 
 ISC
 
-## Additional Documentation
+## Documentation supplémentaire
 
-- **[DIFF_PRESERVATION_GUIDE.md](./DIFF_PRESERVATION_GUIDE.md)** - Complete guide for automatic diff preservation (start here!)
-- **[GIT_DIFF_TRACKER.md](./GIT_DIFF_TRACKER.md)** - Git Diff Tracker API reference and details
+- **[DIFF_PRESERVATION_GUIDE.md](./DIFF_PRESERVATION_GUIDE.md)** – Guide complet (commencez ici !)
+- **[GIT_DIFF_TRACKER.md](./GIT_DIFF_TRACKER.md)** – Référence API et détails
 
-## Contributing
+## Contribution
 
-This project is part of an advanced authentication system. Contributions should maintain the security standards and follow the existing code structure.
+Ce projet fait partie d’un système d’authentification avancé. Les contributions doivent maintenir les standards de sécurité et respecter la structure existante du code.
