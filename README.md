@@ -20,20 +20,33 @@ A full-stack authentication application built with MongoDB, Express, React, and 
 - Compare changes across different points in time
 - Export diff history to JSON
 
+### AI Agent Integration
+- **Prevents plan mode loops** - Agents never get stuck in planning
+- **Automatic git diff inclusion** - All responses include current diffs
+- **Force execution mode** - Ensures agents execute tasks immediately
+- **Multiple agent support** - Works with Blackbox, Claude, Cursor, Copilot
+- **Timeout protection** - Prevents agents from hanging
+- **State validation** - Detects and corrects stuck agents
+
 ## Project Structure
 
 ```
 .
 ├── backend/
+│   ├── config/
+│   │   └── agent.config.js       # Agent behavior configuration
 │   ├── controllers/
 │   │   └── auth.controller.js    # Authentication logic
 │   ├── db/
 │   │   └── connectDB.js          # MongoDB connection
+│   ├── middleware/
+│   │   └── agentMode.middleware.js # Agent plan mode prevention
 │   ├── models/
 │   │   └── user.model.js         # User schema
 │   ├── routes/
 │   │   ├── auth.route.js         # Auth endpoints
-│   │   └── gitDiff.route.js      # Git diff endpoints
+│   │   ├── gitDiff.route.js      # Git diff endpoints
+│   │   └── agent.route.js        # Agent control endpoints
 │   ├── utils/
 │   │   ├── gitDiffTracker.js     # Core diff tracking logic
 │   │   └── diffCli.js            # CLI interface
@@ -41,7 +54,8 @@ A full-stack authentication application built with MongoDB, Express, React, and 
 ├── package.json
 ├── .gitignore
 ├── README.md
-└── GIT_DIFF_TRACKER.md           # Detailed git diff tracker docs
+├── GIT_DIFF_TRACKER.md           # Detailed git diff tracker docs
+└── AGENT_INTEGRATION.md          # Agent integration guide
 ```
 
 ## Installation
@@ -103,6 +117,53 @@ See [DIFF_PRESERVATION_GUIDE.md](./DIFF_PRESERVATION_GUIDE.md) for complete docu
 ### Authentication Routes (`/api/auth`)
 
 The authentication endpoints handle user registration, login, and session management.
+
+### Agent Control Routes (`/api/agent`)
+
+Prevent AI agents from getting stuck in plan mode and ensure proper responses with git diffs.
+
+#### `GET /api/agent/config/:agentName`
+Get configuration for specific agent (blackbox, claude, cursor, etc.)
+
+**Response:**
+```json
+{
+  "success": true,
+  "agent": "blackbox",
+  "config": {
+    "mode": "execute",
+    "skipPlanMode": true,
+    "includeGitDiff": true
+  },
+  "instructions": {
+    "mode": "execute",
+    "planMode": "disabled"
+  }
+}
+```
+
+#### `POST /api/agent/execute`
+Execute task with automatic git diff inclusion
+
+**Request:**
+```json
+{
+  "task": "Fix authentication bug",
+  "agentName": "blackbox",
+  "skipPlan": true
+}
+```
+
+#### `POST /api/agent/force-execute`
+Force agent out of plan mode into execution mode
+
+#### `POST /api/agent/result`
+Submit task results with git diff comparison
+
+#### `GET /api/agent/health`
+Check agent system status
+
+See [AGENT_INTEGRATION.md](./AGENT_INTEGRATION.md) for complete documentation.
 
 ### Git Diff Routes (`/api/git-diff`)
 
@@ -387,6 +448,7 @@ ISC
 
 ## Additional Documentation
 
+- **[AGENT_INTEGRATION.md](./AGENT_INTEGRATION.md)** - Fix for agents stuck in plan mode (Blackbox AI, etc.)
 - **[DIFF_PRESERVATION_GUIDE.md](./DIFF_PRESERVATION_GUIDE.md)** - Complete guide for automatic diff preservation (start here!)
 - **[GIT_DIFF_TRACKER.md](./GIT_DIFF_TRACKER.md)** - Git Diff Tracker API reference and details
 

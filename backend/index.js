@@ -3,7 +3,14 @@ import dotenv from "dotenv";
 import { connectDB } from "./db/connectDB.js";
 import authRoutes from "./routes/auth.route.js";
 import gitDiffRoutes, { setWatcherInstance } from "./routes/gitDiff.route.js";
+import agentRoutes from "./routes/agent.route.js";
 import DiffWatcher from "./utils/diffWatcher.js";
+import {
+  enforceExecutionMode,
+  autoIncludeGitDiff,
+  validateAgentResponse,
+  preventPlanModeTimeout
+} from "./middleware/agentMode.middleware.js";
 
 dotenv.config();
 const app = express();
@@ -18,8 +25,15 @@ setWatcherInstance(diffWatcher);
 
 app.use(express.json());
 
+// Agent middleware - prevents plan mode loops and ensures git diff in responses
+app.use(enforceExecutionMode);
+app.use(autoIncludeGitDiff);
+app.use(validateAgentResponse);
+app.use(preventPlanModeTimeout);
+
 app.use("/api/auth", authRoutes);
 app.use("/api/git-diff", gitDiffRoutes);
+app.use("/api/agent", agentRoutes);
 
 app.listen(PORT, () => {
   connectDB();
