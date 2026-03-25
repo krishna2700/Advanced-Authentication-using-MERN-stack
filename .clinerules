@@ -1,0 +1,148 @@
+# Agent Behavior Rules
+# This file ensures AI agents (Blackbox, Cline, Cursor, etc.) follow consistent behavior
+
+## CRITICAL: Never Get Stuck in Plan Mode
+- Agents MUST NOT remain in plan mode indefinitely
+- After analyzing the task, agents MUST switch to ACT mode and execute
+- Planning should be brief (1-2 iterations max) before taking action
+
+## Required Agent Behaviors
+
+### 1. Always Provide Responses
+- NEVER produce empty or silent output
+- Always acknowledge user requests with text responses
+- If no action is needed, explain why
+
+### 2. Git Diff Integration
+- Before completing tasks, agents MUST capture git diff
+- Use the git diff tracker API: POST /api/git-diff/save
+- Include diff information in task completion responses
+- Show what files were changed and how
+
+### 3. Autonomous Execution
+- Do NOT ask for permission between steps
+- Do NOT wait for user approval to proceed
+- Execute multi-step tasks sequentially without stopping
+- Only ask questions if critical information is missing
+
+### 4. Task Completion Protocol
+When completing a task, agents MUST:
+1. Execute all necessary changes
+2. Save the current git diff
+3. Provide a summary of changes made
+4. Show the git diff output
+5. Offer a command to verify the results
+
+## Example Completion Flow
+
+```
+1. Analyze task requirements
+2. Make necessary code changes
+3. Save git diff: POST /api/git-diff/save with taskId
+4. Retrieve diff: GET /api/git-diff/last
+5. Present completion summary with diff
+```
+
+## Git Diff Commands for Agents
+
+### Save current diff
+```bash
+curl -X POST http://localhost:5000/api/git-diff/save \
+  -H "Content-Type: application/json" \
+  -d '{"taskId": "task-description"}'
+```
+
+### Get last diff
+```bash
+curl http://localhost:5000/api/git-diff/last
+```
+
+### Get current diff
+```bash
+curl http://localhost:5000/api/git-diff/current
+```
+
+### Compare with previous
+```bash
+curl http://localhost:5000/api/git-diff/compare
+```
+
+## CLI Alternative
+```bash
+# Save diff
+node backend/utils/diffCli.js save task-description
+
+# Show last diff
+node backend/utils/diffCli.js last
+
+# Show current diff
+node backend/utils/diffCli.js current
+
+# Compare changes
+node backend/utils/diffCli.js compare
+```
+
+## Anti-Patterns to Avoid
+
+### ❌ Getting Stuck in Plan Mode
+```
+Agent: "Let me plan this out..."
+Agent: "Here's my plan..."
+Agent: "Should I proceed with this plan?"
+Agent: "Waiting for approval..."
+[STUCK - Never executes]
+```
+
+### ✅ Correct Behavior
+```
+Agent: "I'll fix this issue by..."
+Agent: [Makes changes]
+Agent: [Saves git diff]
+Agent: "Completed! Here's what changed:"
+Agent: [Shows diff]
+```
+
+### ❌ No Response/Silent Execution
+```
+[Agent makes changes silently]
+[No output]
+[User doesn't know what happened]
+```
+
+### ✅ Correct Behavior
+```
+Agent: "Making the following changes..."
+Agent: [Executes changes]
+Agent: "Changes completed. Modified files: X, Y, Z"
+Agent: [Shows git diff]
+```
+
+## Blackbox Agent Specific Rules
+
+The Blackbox AI agent should:
+1. **Exit plan mode immediately** after initial analysis
+2. **Always provide text responses** - never silent execution
+3. **Include git diff** in every task completion
+4. **Match behavior** of Cline, Cursor, and other agents
+5. **Execute autonomously** without waiting for approval
+
+## Integration with This Project
+
+This project includes a Git Diff Tracker that agents should use:
+
+- **Automatic tracking**: Diffs are auto-saved every 5 minutes
+- **Manual tracking**: Agents can trigger saves via API or CLI
+- **History access**: Agents can retrieve and compare diffs
+- **Task association**: Link diffs to specific task IDs
+
+## Verification
+
+To verify an agent is working correctly:
+1. Agent should respond to every message
+2. Agent should execute tasks without getting stuck
+3. Agent should provide git diff when completing tasks
+4. Agent should show what changed and why
+
+## Summary
+
+**The golden rule**: ACT, don't just PLAN. Provide responses. Show diffs. Keep moving forward.
