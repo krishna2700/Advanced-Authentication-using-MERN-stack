@@ -1,6 +1,7 @@
 import express from 'express';
 import gitDiffTracker from '../utils/gitDiffTracker.js';
 import DiffWatcher from '../utils/diffWatcher.js';
+import agentHelper from '../utils/agentHelper.js';
 
 const router = express.Router();
 
@@ -128,6 +129,94 @@ router.post('/watcher/save-now', async (req, res) => {
     res.json({ success: true, message: 'Diff saved successfully' });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// Agent-friendly endpoint: Execute and return both result and git diff
+router.post('/agent/execute', async (req, res) => {
+  try {
+    const { taskId, action } = req.body;
+
+    // Get current diff before any action
+    const currentDiff = await gitDiffTracker.getCurrentDiff();
+
+    // Save the diff with task ID if provided
+    let savedPath = null;
+    if (taskId) {
+      savedPath = await gitDiffTracker.saveDiff(taskId);
+    }
+
+    // Return both the result and git diff
+    res.json({
+      success: true,
+      result: {
+        action: action || 'diff_snapshot',
+        taskId: taskId || null,
+        savedPath: savedPath,
+        timestamp: new Date().toISOString()
+      },
+      gitDiff: currentDiff
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+      gitDiff: null
+    });
+  }
+});
+
+// Get execution result with current git diff (non-saving version)
+router.get('/agent/status', async (req, res) => {
+  try {
+    const result = await agentHelper.getStatus();
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
+// Compare current state with previous (agent-friendly)
+router.get('/agent/compare', async (req, res) => {
+  try {
+    const result = await agentHelper.compareWithPrevious();
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
+// Save snapshot with execution summary
+router.post('/agent/snapshot', async (req, res) => {
+  try {
+    const { taskId } = req.body;
+    const result = await agentHelper.saveSnapshot(taskId);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
+// Get full execution summary (prevents plan mode)
+router.post('/agent/summary', async (req, res) => {
+  try {
+    const { taskId } = req.body;
+    const result = await agentHelper.getExecutionSummary(taskId);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
   }
 });
 

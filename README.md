@@ -20,6 +20,13 @@ A full-stack authentication application built with MongoDB, Express, React, and 
 - Compare changes across different points in time
 - Export diff history to JSON
 
+### AI Agent Integration
+- **No plan mode lockup** - Agents execute instead of planning indefinitely
+- **Agent-friendly endpoints** that return both results and git diffs
+- **Clear execution indicators** prevent mode confusion
+- Compatible with Claude, ChatGPT, Blackbox, and other AI agents
+- See [AGENT_INTEGRATION_GUIDE.md](./AGENT_INTEGRATION_GUIDE.md) for details
+
 ## Project Structure
 
 ```
@@ -97,6 +104,42 @@ npm run diff:compare
 ```
 
 See [DIFF_PRESERVATION_GUIDE.md](./DIFF_PRESERVATION_GUIDE.md) for complete documentation.
+
+## Quick Start - AI Agent Integration
+
+### For AI Agents (Claude, ChatGPT, Blackbox, etc.)
+
+Prevent plan mode lockup by using agent-friendly endpoints:
+
+```javascript
+// Use the Agent Helper utility
+import agentHelper from './backend/utils/agentHelper.js';
+
+// Execute and get results with git diff
+const result = await agentHelper.executeWithDiff({
+  taskId: 'my-task',
+  action: 'implement-feature'
+});
+
+// Result includes:
+// - result.mode = 'execute' (not 'plan')
+// - result.gitDiff = {...}
+// - result.result = {...}
+```
+
+**Or use REST API:**
+```bash
+# Execute task and get result + diff
+POST /api/git-diff/agent/execute
+{
+  "taskId": "task-123",
+  "action": "implement-feature"
+}
+
+# Response includes both result and gitDiff
+```
+
+See [AGENT_INTEGRATION_GUIDE.md](./AGENT_INTEGRATION_GUIDE.md) for complete agent integration documentation.
 
 ## API Endpoints
 
@@ -196,6 +239,56 @@ Export all diff history to a JSON file
   "success": true,
   "message": "History exported",
   "filepath": "./export.json"
+}
+```
+
+#### `POST /api/git-diff/agent/execute`
+Agent-friendly endpoint that executes and returns both result and git diff in one response
+
+**Request Body:**
+```json
+{
+  "taskId": "task-123",  // optional
+  "action": "snapshot"    // optional
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "result": {
+    "action": "snapshot",
+    "taskId": "task-123",
+    "savedPath": "/path/to/saved/diff.json",
+    "timestamp": "2026-03-25T14:00:00.000Z"
+  },
+  "gitDiff": {
+    "timestamp": "2026-03-25T14:00:00.000Z",
+    "branch": "main",
+    "lastCommit": "abc1234 Commit message",
+    "stagedDiff": "...",
+    "unstagedDiff": "...",
+    "combinedDiff": "..."
+  }
+}
+```
+
+#### `GET /api/git-diff/agent/status`
+Get execution status with current git diff without saving
+
+**Response:**
+```json
+{
+  "success": true,
+  "status": {
+    "hasChanges": true,
+    "branch": "main",
+    "lastCommit": "abc1234 Commit message",
+    "timestamp": "2026-03-25T14:00:00.000Z"
+  },
+  "currentDiff": {...},
+  "lastSaved": {...}
 }
 ```
 
@@ -389,6 +482,7 @@ ISC
 
 - **[DIFF_PRESERVATION_GUIDE.md](./DIFF_PRESERVATION_GUIDE.md)** - Complete guide for automatic diff preservation (start here!)
 - **[GIT_DIFF_TRACKER.md](./GIT_DIFF_TRACKER.md)** - Git Diff Tracker API reference and details
+- **[AGENT_INTEGRATION_GUIDE.md](./AGENT_INTEGRATION_GUIDE.md)** - AI agent integration guide (prevents plan mode lockup)
 
 ## Contributing
 
